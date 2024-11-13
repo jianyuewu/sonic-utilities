@@ -1684,5 +1684,11 @@
     },
     "STP_TABLE|GLOBAL": {
         "max_stp_inst": "510"
+    },
+    "TX_ERR_STATE|Ethernet0" : {
+        "tx_status": "OK"
+    },
+    "TX_ERR_STATE|Ethernet1" : {
+        "tx_status": "NotOK"
     }
 }

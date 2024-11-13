@@ -409,5 +409,11 @@
         "action": "set_vrf",
         "param/vrf_id": "p4rt-vrf-80",
         "controller_metadata": "my metadata"
+    },
+    "TX_ERR_APPL:Ethernet0": {
+        "tx_error_stat": "0"
+    },
+    "TX_ERR_APPL:Ethernet1": {
+        "tx_error_stat": "11"
     }
 }
