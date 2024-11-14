@@ -890,17 +890,16 @@ def tx_error(interfacename):
     table = []
     for k in txerr_keys:
         k = k.replace(prefix_statedb, "")
-        r = []
-        r.append(k)
+        if k == interfacename:
+            r = [k]
+            r.append(state_db.get(state_db.STATE_DB, prefix_statedb + k, "tx_status"))
+            entry = appl_db.get_all(appl_db.APPL_DB, prefix_appldb + k)
+            if 'tx_error_stat' not in entry:
+                r.append("")
+            else:
+                r.append(entry['tx_error_stat'])
 
-        r.append(state_db.get(state_db.STATE_DB, prefix_statedb + k, "tx_status"))
-        entry = appl_db.get_all(appl_db.APPL_DB, prefix_appldb + k)
-        if 'tx_error_stat' not in entry:
-            r.append("")
-        else:
-            r.append(entry['tx_error_stat'])
-
-        table.append(r)
+            table.append(r)
 
     header = ['Port', 'status', 'tx_error_stat']
     click.echo(tabulate(table, header))
