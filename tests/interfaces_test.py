@@ -263,6 +263,17 @@ PortChannel0004  routed
 PortChannel1001  trunk               4000
 """
 
+show_intf_tx_error_ok = """\
+Port       status      tx_error_stat
+---------  --------  ---------------
+Ethernet0  OK                      0
+"""
+
+show_intf_tx_error_notok = """\
+Port       status      tx_error_stat
+---------  --------  ---------------
+Ethernet1  NotOK                  11
+"""
 
 class TestInterfaces(object):
     @classmethod
@@ -495,6 +506,22 @@ class TestInterfaces(object):
 
         assert result.exit_code == 0
         assert result.output == show_interfaces_switchport_config_in_alias_mode_output
+
+    def test_show_intf_tx_error_ok(self):
+        runner = CliRunner()
+        result = runner.invoke(show.cli.commands["interfaces"].commands["tx_error"], ["Ethernet0"])
+        print(result.exit_code)
+        print(result.output)
+        assert result.exit_code == 0
+        assert result.output == show_intf_tx_error_ok
+
+    def test_show_intf_tx_error_notok(self):
+        runner = CliRunner()
+        result = runner.invoke(show.cli.commands["interfaces"].commands["tx_error"], ["Ethernet1"])
+        print(result.exit_code)
+        print(result.output)
+        assert result.exit_code == 0
+        assert result.output == show_intf_tx_error_notok
 
     @classmethod
     def teardown_class(cls):

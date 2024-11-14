@@ -4609,6 +4609,61 @@ def shutdown(ctx, interface_name):
             config_db.mod_entry("VLAN_SUB_INTERFACE", sp_name, {"admin_status": "down"})
 
 #
+# 'tx_error_threshold' subcommand
+#
+
+@interface.group()
+@click.pass_context
+def tx_error_threshold(ctx):
+    """Set or del threshold of tx error statistics"""
+    pass
+
+#
+# 'set' subcommand
+#
+@tx_error_threshold.command('set')
+@click.pass_context
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+@click.argument('interface_tx_err_threshold', metavar='<interface_tx_err_threshold>', required=True, type=int)
+def tx_error_set(ctx, interface_name, interface_tx_err_threshold):
+    """Set threshold of tx error statistics"""
+    if interface_name is None:
+        ctx.fail("'interface_name' is None!")
+
+    config_db = ctx.obj['config_db']
+    if clicommon.get_interface_naming_mode() == "alias":
+        interface_name = interface_alias_to_name(interface_name)
+        if interface_name is None:
+            ctx.fail("'interface_name' is None!")
+
+    if interface_name.startswith("Ethernet"):
+        config_db.set_entry("TX_ERR_CFG", (interface_name), {"tx_error_threshold": interface_tx_err_threshold})
+    else:
+        ctx.fail("Only Ethernet interfaces are supported")
+
+#
+# 'clear' subcommand
+#
+@tx_error_threshold.command('clear')
+@click.pass_context
+@click.argument('interface_name', metavar='<interface_name>', required=True)
+def tx_error_clear(ctx, interface_name):
+    """Clear threshold of tx error statistics"""
+    if interface_name is None:
+        ctx.fail("'interface_name' is None!")
+
+    config_db = ctx.obj["config_db"]
+    if clicommon.get_interface_naming_mode() == "alias":
+        interface_name = interface_alias_to_name(interface_name)
+        if interface_name is None:
+            ctx.fail("'interface_name' is None!")
+
+    if interface_name.startswith("Ethernet"):
+        config_db.set_entry("TX_ERR_CFG", (interface_name), None)
+    else:
+        ctx.fail("Only Ethernet interfaces are supported")
+
+#
 # 'speed' subcommand
 #
 
@@ -5026,6 +5081,14 @@ def add_interface_ip(ctx, interface_name, ip_addr, gw, secondary):
         interface_name = interface_alias_to_name(config_db, interface_name)
         if interface_name is None:
             ctx.fail("'interface_name' is None!")
+
+        if interface_name.startswith("Ethernet"):
+            config_db.set_entry("INTERFACE", (interface_name, ip_addr), {"NULL": "NULL"})
+        elif interface_name.startswith("PortChannel"):
+            config_db.set_entry("PORTCHANNEL_INTERFACE", (interface_name, ip_addr), {"NULL": "NULL"})
+        elif interface_name.startswith("Vlan"):
+            config_db.set_entry("VLAN_INTERFACE", (interface_name, ip_addr), {"NULL": "NULL"})
+
         # Add a validation to check this interface is not a member in vlan before
         # changing it to a router port mode
     vlan_member_table = config_db.get_table('VLAN_MEMBER')
@@ -6296,6 +6359,17 @@ def del_route(ctx, command_str):
 def acl():
     """ACL-related configuration tasks"""
     pass
+
+#
+# 'tx_error_stat_poll_period' subcommand ('config tx_error_stat_poll_period')
+#
+@config.command()
+@click.argument('period', metavar='<period>', required=True, type=int)
+def tx_error_stat_poll_period(period):
+    """Set polling period of tx error statistics, 0 for disable, xxx for default"""
+    config_db = ConfigDBConnector()
+    config_db.connect()
+    config_db.set_entry("TX_ERR_CFG", ("GLOBAL_PERIOD"), {"tx_error_check_period": period})
 
 #
 # 'add' subgroup ('config acl add ...')

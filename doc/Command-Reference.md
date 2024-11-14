@@ -228,6 +228,9 @@
 * [Banner Commands](#banner-commands)
   * [Banner config commands](#banner-config-commands)
   * [Banner show command](#banner-show-command)
+* [Tx error counter commands](#tx-error-counter-commands)
+  * [Tx error counter config commands](#tx-error-counter-config-commands)
+  * [Tx error counter show command](#tx-error-counter-show-command)
 
 ## Document History
 
@@ -13907,4 +13910,40 @@ enabled  Login    You are on
                   All access and/or use are subject to monitoring.
 
                   Help:    https://sonic-net.github.io/SONiC/
+```
+
+# Tx error counter commands
+
+This sub-section explains the list of the configuration options available for tx error counter feature.
+When tx error count exceed threshold, then it will set interface status to not OK.
+
+## Tx error counter config commands
+
+- Config tx error count threshold to 10 times
+
+```
+admin@sonic:~$ sudo config interface tx-error-threshold set Ethernet0 10
+```
+
+- Clear tx error count threshold to 10 times
+
+```
+admin@sonic:~$ sudo config interface tx-error-threshold set Ethernet0 10
+```
+
+- Set tx error stat poll period to 10 seconds
+
+```
+admin@sonic:~$ sudo config tx-error-stat-poll-period 10
+```
+
+## Tx error counter show command
+
+- Show current tx error counters and interface status
+
+```
+admin@sonic:~$ show interfaces tx_error Ethernet0
+Port       status      tx_error_stat
+---------  --------  ---------------
+Ethernet0  OK                      0
 ```
