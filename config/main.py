@@ -125,6 +125,7 @@ TTL_RANGE = click.IntRange(min=0, max=255)
 QUEUE_RANGE = click.IntRange(min=0, max=255)
 GRE_TYPE_RANGE = click.IntRange(min=0, max=65535)
 ADHOC_VALIDATION = True
+WAIT_UNTIL_CLEAR_STATUS = 0
 
 if os.environ.get("UTILITIES_UNIT_TESTING", "0") in ("1", "2"):
     temp_system_reload_lockfile = tempfile.NamedTemporaryFile()
@@ -778,6 +779,7 @@ def storm_control_delete_entry(port_name, storm_type):
 
 
 def _wait_until_clear(tables, interval=0.5, timeout=30, verbose=False):
+    global WAIT_UNTIL_CLEAR_STATUS
     start = time.time()
     empty = False
     app_db = SonicV2Connector(host='127.0.0.1')
@@ -795,6 +797,7 @@ def _wait_until_clear(tables, interval=0.5, timeout=30, verbose=False):
         empty = (non_empty_table_count == 0)
     if not empty:
         click.echo("Operation not completed successfully, please save and reload configuration.")
+        WAIT_UNTIL_CLEAR_STATUS = 1
     return empty
 
 
@@ -3161,6 +3164,8 @@ def _update_buffer_calculation_model(config_db, model):
     help="Dry run, writes config to the given file"
 )
 def reload(ctx, no_dynamic_buffer, no_delay, dry_run, json_data, ports, verbose):
+    global WAIT_UNTIL_CLEAR_STATUS
+    WAIT_UNTIL_CLEAR_STATUS = 0
     """Reload QoS configuration"""
     if ports:
         log.log_info("'qos reload --ports {}' executing...".format(ports))
@@ -3227,19 +3232,26 @@ def reload(ctx, no_dynamic_buffer, no_delay, dry_run, json_data, ports, verbose)
                     '-t', '{},{}'.format(qos_template_file, qos_fname),
                     '-y', sonic_version_file
                 ]
-                clicommon.run_command(command, display_cmd=True)
+                out, rc = clicommon.run_command(command, display_cmd=True, return_cmd=True)
+                if rc != 0:
+                    click.echo("Command failed due to rc value!")
+                    # clicommon.run_command does this by default when rc != 0 and return_cmd=False
+                    sys.exit(rc)
 
                 command = [SONIC_CFGGEN_PATH] + cmd_ns + ["-j", buffer_fname, "-j", qos_fname]
                 if dry_run:
                     out, rc = clicommon.run_command(command + ["--print-data"], display_cmd=True, return_cmd=True)
-                    if rc != 0:
-                        # clicommon.run_command does this by default when rc != 0 and return_cmd=False
-                        sys.exit(rc)
                     with open("{}{}".format(dry_run, asic_id_suffix), 'w') as f:
                         json.dump(json.loads(out), f, sort_keys=True, indent=4)
                 else:
-                    clicommon.run_command(command + ["--write-to-db"], display_cmd=True)
-
+                    out, rc = clicommon.run_command(command + ["--write-to-db"], display_cmd=True, return_cmd=True)
+                if rc != 0:
+                    click.echo("Command failed due to rc value!")
+                    # clicommon.run_command does this by default when rc != 0 and return_cmd=False
+                    sys.exit(rc)
+                if WAIT_UNTIL_CLEAR_STATUS != 0:
+                    click.echo("Command failed due to _wait_until_clear() failed!")
+                    sys.exit(1)
             else:
                 click.secho("QoS definition template not found at {}".format(
                     qos_template_file
