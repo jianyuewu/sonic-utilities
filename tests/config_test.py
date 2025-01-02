@@ -1607,6 +1607,35 @@ class TestConfigQos(object):
         _clear_qos(True, False)
         _wait_until_clear.assert_called_with(['BUFFER_*_TABLE:*', 'BUFFER_*_SET'], interval=0.5, timeout=0, verbose=False)
 
+    def test_qos_wait_until_clear_not_empty_should_exit(self):
+        from config.main import _wait_until_clear
+        from config.main import WAIT_UNTIL_CLEAR_STATUS
+
+        with mock.patch('swsscommon.swsscommon.SonicV2Connector.keys', side_effect=TestConfigQos._keys):
+            TestConfigQos._keys_counter = 10
+            # timeout set to 0, so will always timeout, to set WAIT_UNTIL_CLEAR_STATUS as 1
+            _wait_until_clear(["BUFFER_POOL_TABLE:*"], 0.5, 0, verbose=False)
+            assert config.WAIT_UNTIL_CLEAR_STATUS == 1
+
+    def test_qos_reload_single_should_exit(self):
+        from config.main import reload
+        from config.main import WAIT_UNTIL_CLEAR_STATUS
+        config.WAIT_UNTIL_CLEAR_STATUS = 1
+
+        with patch('sys.exit') as mock_exit:
+            runner = CliRunner()
+            output_file = os.path.join(os.sep, "tmp", "qos_config_output.json")
+            print("Saving output in {}".format(output_file))
+            json_data = '{"DEVICE_METADATA": {"localhost": {}}}'
+            result = runner.invoke(
+                config.config.commands["qos"],
+                ["reload", "--dry_run", output_file, "--json-data", json_data]
+            )
+            print(result.exit_code)
+            print(result.output)
+            # Expect sys.exit(1) when WAIT_UNTIL_CLEAR_STATUS is 1
+            assert result.exit_code == 1
+
     def test_qos_reload_single(
             self, get_cmd_module, setup_qos_mock_apis,
             setup_single_broadcom_asic
