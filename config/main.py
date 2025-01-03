@@ -125,6 +125,7 @@ TTL_RANGE = click.IntRange(min=0, max=255)
 QUEUE_RANGE = click.IntRange(min=0, max=255)
 GRE_TYPE_RANGE = click.IntRange(min=0, max=65535)
 ADHOC_VALIDATION = True
+WAIT_UNTIL_CLEAR_STATUS = 0
 
 if os.environ.get("UTILITIES_UNIT_TESTING", "0") in ("1", "2"):
     temp_system_reload_lockfile = tempfile.NamedTemporaryFile()
@@ -778,6 +779,7 @@ def storm_control_delete_entry(port_name, storm_type):
 
 
 def _wait_until_clear(tables, interval=0.5, timeout=30, verbose=False):
+    global WAIT_UNTIL_CLEAR_STATUS
     start = time.time()
     empty = False
     app_db = SonicV2Connector(host='127.0.0.1')
@@ -795,6 +797,7 @@ def _wait_until_clear(tables, interval=0.5, timeout=30, verbose=False):
         empty = (non_empty_table_count == 0)
     if not empty:
         click.echo("Operation not completed successfully, please save and reload configuration.")
+        WAIT_UNTIL_CLEAR_STATUS = 1
     return empty
 
 
@@ -3161,6 +3164,8 @@ def _update_buffer_calculation_model(config_db, model):
     help="Dry run, writes config to the given file"
 )
 def reload(ctx, no_dynamic_buffer, no_delay, dry_run, json_data, ports, verbose):
+    global WAIT_UNTIL_CLEAR_STATUS
+    WAIT_UNTIL_CLEAR_STATUS = 0
     """Reload QoS configuration"""
     if ports:
         log.log_info("'qos reload --ports {}' executing...".format(ports))
@@ -3251,6 +3256,10 @@ def reload(ctx, no_dynamic_buffer, no_delay, dry_run, json_data, ports, verbose)
 
     if buffer_model_updated:
         print("Buffer calculation model updated, restarting swss is required to take effect")
+
+    if WAIT_UNTIL_CLEAR_STATUS != 0:
+        click.echo("Some keys in APPL_DB didn't update successfully, please reload configuration.")
+        sys.exit(1)
 
 def _qos_update_ports(ctx, ports, dry_run, json_data):
     """Reload QoS configuration"""
