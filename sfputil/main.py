@@ -870,20 +870,23 @@ def eeprom_hexdump_pages_general(logical_port_name, pages, target_page):
             lines.append(f'{EEPROM_DUMP_INDENT}Lower page 0h')
             return_code, output = eeprom_dump_general(physical_port, page, 0, PAGE_SIZE, 0)
             if return_code != 0:
-                return return_code, output
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for Lower page 0h: {output}')
+            else:
+                lines.append(output)
 
             lines.append(f'\n{EEPROM_DUMP_INDENT}Upper page 0h')
             return_code, output = eeprom_dump_general(physical_port, page, PAGE_OFFSET, PAGE_SIZE, PAGE_OFFSET)
             if return_code != 0:
-                return return_code, output
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for Upper page 0h: {output}')
+            else:
+                lines.append(output)
         else:
             lines.append(f'\n{EEPROM_DUMP_INDENT}Upper page {page:x}h')
             return_code, output = eeprom_dump_general(physical_port, page, page * PAGE_SIZE + PAGE_OFFSET, PAGE_SIZE, PAGE_OFFSET)
             if return_code != 0:
-                return return_code, output
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for page {page:x}h: {output}')
+            else:
+                lines.append(output)
 
     lines.append('') # add a new line
     return 0, '\n'.join(lines)
@@ -916,20 +919,23 @@ def eeprom_hexdump_pages_sff8472(logical_port_name, pages, target_page):
             else:
                 return_code, output = eeprom_dump_general(physical_port, page, 0, PAGE_SIZE, 0)
             if return_code != 0:
-                return return_code, 'Error: Failed to read EEPROM for A0h!'
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for A0h: {output}')
+            else:
+                lines.append(output)
         elif page == 1:
             lines.append(f'\n{EEPROM_DUMP_INDENT}A2h dump (lower 128 bytes)')
             return_code, output = eeprom_dump_general(physical_port, page, SFF8472_A0_SIZE, PAGE_SIZE, 0)
             if return_code != 0:
-                return ERROR_NOT_IMPLEMENTED, 'Error: Failed to read EEPROM for A2h!'
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for A2h (lower): {output}')
+            else:
+                lines.append(output)
         else:
             lines.append(f'\n{EEPROM_DUMP_INDENT}A2h dump (upper 128 bytes) page {page - 2:x}h')
             return_code, output = eeprom_dump_general(physical_port, page, SFF8472_A0_SIZE + PAGE_OFFSET + page * PAGE_SIZE, PAGE_SIZE, PAGE_SIZE)
             if return_code != 0:
-                return ERROR_NOT_IMPLEMENTED, 'Error: Failed to read EEPROM for A2h upper page!'
-            lines.append(output)
+                lines.append(f'{EEPROM_DUMP_INDENT}Failed to read EEPROM for A2h upper page {page - 2:x}h: {output}')
+            else:
+                lines.append(output)
 
     lines.append('') # add a new line
     return 0, '\n'.join(lines)
@@ -1499,10 +1505,10 @@ def is_fw_switch_done(port_name):
                 status = -1 # Abnormal status.
             elif (ImageARunning == 1) and (ImageACommitted == 0):   # ImageA is running, but not committed.
                 click.echo("FW images switch successful : ImageA is running")
-                status = 1  # run_firmware is done. 
+                status = 1  # run_firmware is done.
             elif (ImageBRunning == 1) and (ImageBCommitted == 0):   # ImageB is running, but not committed.
                 click.echo("FW images switch successful : ImageB is running")
-                status = 1  # run_firmware is done. 
+                status = 1  # run_firmware is done.
             else:                                                   # No image is running, or running and committed image is same.
                 click.echo("FW info error : Failed to switch into uncommitted image!")
                 status = -1 # Failure for Switching images.
